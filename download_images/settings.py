@@ -1,7 +1,7 @@
 import json
 import os
 
-# Default configuration values
+CONFIG_FILE = os.path.join(os.getcwd(), 'settings.json')
 DEFAULTS = {
     "extensions": [".gif", ".png"],
     "size": [96, 96],
@@ -9,28 +9,27 @@ DEFAULTS = {
     "group_by": "number"
 }
 
-CONFIG_PATH = os.path.join(os.getcwd(), "settings.json")
-
 
 def load_config():
-    if os.path.exists(CONFIG_PATH):
+    # Attempt to read existing, else create defaults
+    if os.path.exists(CONFIG_FILE):
         try:
-            with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            # Ensure any missing keys are filled in
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                cfg = json.load(f)
+            # fill in any missing keys
             for k, v in DEFAULTS.items():
-                data.setdefault(k, v)
-            return data
-        except (json.JSONDecodeError, IOError):
+                cfg.setdefault(k, v)
+            return cfg
+        except Exception:
             pass
-    # write defaults if no valid config
+    # Write defaults back
     save_config(DEFAULTS)
     return DEFAULTS.copy()
 
 
-def save_config(config):
+def save_config(cfg):
     try:
-        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2)
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, indent=2)
     except IOError as e:
-        print(f"Error saving config: {e}")
+        print(f"⚠ Could not save settings: {e}")

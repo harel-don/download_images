@@ -2,10 +2,13 @@ import os
 import shutil
 
 
-def group_by_number(directory):
+def group_by_number(directory, mode=None):
     """
     Moves files into subfolders based on the first numeric token in each filename.
-    E.g. 'Spr 5b 004 s.png' → subfolder '004/'.
+    The optional `mode` param is ignored (legacy support).
+    """
+    """
+    Moves files into subfolders based on the first numeric token in each filename.
     """
     for filename in os.listdir(directory):
         src = os.path.join(directory, filename)
@@ -24,3 +27,15 @@ def group_by_number(directory):
         os.makedirs(dest_dir, exist_ok=True)
         shutil.move(src, os.path.join(dest_dir, filename))
         print(f"Moved {filename} → {key}/")
+
+
+def group_images(directory, mode="number"):
+    """
+    Dispatches grouping based on the given mode.
+    Currently supports:
+      - 'number': group by numeric ID in filename
+    """
+    if mode == "number":
+        group_by_number(directory)
+    else:
+        print(f"⚠️  Unknown grouping mode '{mode}'")
