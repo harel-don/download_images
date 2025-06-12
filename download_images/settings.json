@@ -1,0 +1,12 @@
+{
+  "extensions": [
+    ".gif",
+    ".png"
+  ],
+  "size": [
+    96,
+    96
+  ],
+  "output_dir": "downloaded_images",
+  "group_by": "number"
+}
