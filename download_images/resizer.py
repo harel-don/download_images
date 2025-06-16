@@ -1,66 +1,81 @@
 import os
 from PIL import Image, ImageSequence
 
-# Target minimum size (can be made configurable via settings if desired)
 MIN_SIZE = 96
-
 
 def expand_canvas(frame: Image.Image, new_w: int, new_h: int) -> Image.Image:
     """
-    Return a new image of size (new_w,new_h) with `frame` pasted
-    centered horizontally and aligned to the bottom, background transparent.
+    Return a new RGBA image of size (new_w,new_h) with `frame` pasted
+    centered horizontally and aligned to bottom, preserving alpha.
     """
-    mode = 'RGBA' if frame.mode in ('RGBA','LA') else 'RGB'
-    bg_color = (0, 0, 0, 0) if mode=='RGBA' else (0, 0, 0)
-    canvas = Image.new(mode, (new_w, new_h), bg_color)
-    # compute offsets
+    canvas = Image.new('RGBA', (new_w, new_h), (0, 0, 0, 0))
     w, h = frame.size
     x = (new_w - w) // 2
     y = new_h - h
-    if frame.mode != mode:
-        frame = frame.convert(mode)
-    canvas.paste(frame, (x, y), frame if 'A' in mode else None)
+    frame_rgba = frame.convert('RGBA')
+    canvas.paste(frame_rgba, (x, y), frame_rgba)
     return canvas
 
 
 def process_image(path: str, min_size: int = MIN_SIZE) -> None:
     """
-    Resize the image at `path` by expanding its canvas so that
-    both dimensions >= min_size (or the larger of its own dims).
-    Animated GIF frames are each processed and repackaged.
+    Expand canvas for static and animated images, preserving transparency.
+    Handles both GIF and APNG.
     """
     im = Image.open(path)
     w, h = im.size
-    # determine new square size
-    new_size = max(min_size, w, h)
+    new = max(min_size, w, h)
+    ext = os.path.splitext(path)[1].lower()
 
     if getattr(im, 'is_animated', False):
+        # Process each frame
         frames = []
         durations = []
-        for frame in ImageSequence.Iterator(im):
-            new_frame = expand_canvas(frame, new_size, new_size)
+        for fr in ImageSequence.Iterator(im):
+            new_frame = expand_canvas(fr, new, new)
             frames.append(new_frame)
-            durations.append(frame.info.get('duration', 100))
-        # overwrite original GIF
-        frames[0].save(
-            path,
-            save_all=True,
-            append_images=frames[1:],
-            duration=durations,
-            loop=0,
-            disposal=2
-        )
+            durations.append(fr.info.get('duration', 100))
+
+        # Save animated PNG or GIF accordingly
+        save_kwargs = {
+            'save_all': True,
+            'append_images': frames[1:],
+            'loop': 0
+        }
+        if ext == '.gif':
+            # GIF parameters
+            save_kwargs.update({
+                'duration': durations,
+                'disposal': 2,
+                'transparency': 0
+            })
+            frames[0].save(path, format='GIF', **save_kwargs)
+        elif ext == '.png':
+            # APNG support (Pillow >=7.0)
+            save_kwargs.update({
+                'duration': durations
+            })
+            frames[0].save(path, format='PNG', **save_kwargs)
+        else:
+            # Other animated formats fallback to first frame
+            new_im = expand_canvas(im, new, new)
+            new_im.save(path)
     else:
-        new_im = expand_canvas(im, new_size, new_size)
-        new_im.save(path)
+        # Static image: expand and save as PNG if original was PNG, else keep format
+        new_im = expand_canvas(im, new, new)
+        if ext == '.png':
+            new_im.save(path, format='PNG')
+        elif ext == '.gif':
+            new_im.save(path, format='GIF')
+        else:
+            new_im.save(path)
 
 
 def batch_resize(directory: str, extensions=None, min_size: int = MIN_SIZE) -> None:
     """
-    Walk `directory` (non-recursive) and call `process_image` on each file
-    whose extension is in `extensions` (list of ".gif", ".png", etc.).
+    Walk `directory` and process each image matching extensions.
     """
-    ext_set = set(ext.lower() for ext in (extensions or ['.gif','.png']))
+    ext_set = set(ext.lower() for ext in (extensions or ['.gif', '.png']))
     for fn in os.listdir(directory):
         _, ext = os.path.splitext(fn)
         if ext.lower() not in ext_set:
@@ -70,6 +85,6 @@ def batch_resize(directory: str, extensions=None, min_size: int = MIN_SIZE) -> N
             continue
         try:
             process_image(path, min_size)
-            print(f"🔧 Resized canvas for {fn}")
+            print(f"🔧 Resized {fn}")
         except Exception as e:
             print(f"⚠️ Failed resizing {fn}: {e}")
