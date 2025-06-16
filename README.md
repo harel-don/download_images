@@ -128,6 +128,6 @@ Select operation mode:
 ---
 
 ## 📄 License
-MIT © Your Name
+MIT © Harel Don-Yehiya
 
 Feel free to fork and contribute!
