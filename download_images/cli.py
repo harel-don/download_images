@@ -4,44 +4,51 @@ from download_images.downloader import get_image_urls, is_valid_extension, downl
 from download_images.grouper import group_images
 from download_images.resizer import batch_resize
 
-MENU=[
-  "Select operation mode:",
-  "1) Download images",
-  "2) Group images",
-  "3) Both",
-  "4) Edit settings",
-  "5) Exit",
-  "6) Resize canvas"
+MENU = [
+    "\nSelect operation mode:",
+    "1) Download images",
+    "2) Group images",
+    "3) Both",
+    "4) Edit settings",
+    "5) Resize canvas",
+    "6) Exit"
 ]
 
 def display_menu():
-    for l in MENU: print(l)
+    for line in MENU:
+        print(line)
 
 def handle_download(cfg):
-    out=cfg['output_dir']; size=cfg['size']
-    url=input('Page URL: ')
+    out = cfg['output_dir']
+    size = cfg['size']
+    url = input('Page URL: ')
     for u in get_image_urls(url):
-        if is_valid_extension(u,cfg['extensions']):
-            ok,t=download_image(u,size)
-            if ok: save_image(t,u,out)
+        if is_valid_extension(u, cfg['extensions']):
+            ok, tup = download_image(u, size)
+            if ok:
+                save_image(tup, u, out)
     print(f"Downloaded to '{out}'")
 
 def handle_group(cfg):
-    print("Grouping..."); group_images(cfg['output_dir'],cfg['group_by']); print("Done.")
+    print("Grouping...")
+    group_images(cfg['output_dir'], cfg['group_by'])
+    print("Grouping done.")
 
 def handle_edit(cfg):
-    print("Current settings:")
-    for k,v in cfg.items(): print(f"  {k}: {v}")
-    print("Leave blank to keep.")
-    e=input(f"Extensions [{','.join(cfg['extensions'])}]: ")
-    if e.strip(): cfg['extensions']=[x.strip() for x in e.split(',')]
-    s=input(f"Size WxH [{cfg['size'][0]}x{cfg['size'][1]}]: ")
-    if s.strip(): w,h=s.lower().split('x'); cfg['size']=[int(w),int(h)]
-    o=input(f"Output dir [{cfg['output_dir']}]: ")
-    if o.strip(): cfg['output_dir']=o.strip()
-    g=input(f"Group by [{cfg['group_by']}]: ")
-    if g.strip(): cfg['group_by']=g.strip()
-    save_config(cfg); print("Settings saved!")
+    print("\nCurrent settings:")
+    for k, v in cfg.items():
+        print(f"  {k}: {v}")
+    print("\nLeave blank to keep.")
+    e = input(f"Extensions [{','.join(cfg['extensions'])}]: ")
+    if e.strip(): cfg['extensions'] = [x.strip() for x in e.split(',')]
+    s = input(f"Size WxH [{cfg['size'][0]}x{cfg['size'][1]}]: ")
+    if s.strip(): w, h = s.lower().split('x'); cfg['size'] = [int(w), int(h)]
+    o = input(f"Output dir [{cfg['output_dir']}]: ")
+    if o.strip(): cfg['output_dir'] = o.strip()
+    g = input(f"Group by [{cfg['group_by']}]: ")
+    if g.strip(): cfg['group_by'] = g.strip()
+    save_config(cfg)
+    print("Settings saved!\n")
 
 def handle_resize(cfg):
     print("Resizing canvas...")
@@ -49,16 +56,25 @@ def handle_resize(cfg):
     print("Resize complete.")
 
 def main():
-    cfg=load_config(); os.makedirs(cfg['output_dir'],exist_ok=True)
+    cfg = load_config()
+    os.makedirs(cfg['output_dir'], exist_ok=True)
     while True:
         display_menu()
-        ch=input('Enter 1-6: ').strip()
-        if ch=='5': print('Goodbye!'); break
-        if ch=='6': handle_resize(cfg)
-        if ch=='4': handle_edit(cfg)
-        if ch in ('1','3'): handle_download(cfg)
-        if ch in ('2','3'): handle_group(cfg)
-        if input("Press Enter to return or 'exit': ").strip().lower()=='exit': print('Goodbye!'); break
+        ch = input('Enter 1-6: ').strip()
+        if ch == '6':
+            print('Goodbye!')
+            break
+        if ch == '4':
+            handle_edit(cfg)
+        if ch in ('1', '3'):
+            handle_download(cfg)
+        if ch in ('2', '3'):
+            handle_group(cfg)
+        if ch == '5':
+            handle_resize(cfg)
+        if input("\nPress Enter to return or 'exit': ").strip().lower() == 'exit':
+            print('Goodbye!')
+            break
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
