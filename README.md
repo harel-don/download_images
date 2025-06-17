@@ -131,6 +131,35 @@ Select operation mode:
 
 ---
 
+## 🎨 Example Workflow
+
+1. **Download & group**:
+   ```bash
+   python -m download_images.cli
+   # Enter 3) Both
+   # URL: https://archives.bulbagarden.net/wiki/Category:Black_2_and_White_2_sprites
+   ```
+
+2. **Resize small images** to 96×96:
+   ```bash
+   python -m download_images.cli
+   # Enter 5) Resize canvas
+   ```
+
+3. **Build animations** from sprite sheets:
+   ```bash
+   python -m download_images.cli
+   # Enter 6) Sprite-sheet → Animation
+   # Press Enter to use downloaded_images/
+   ```
+
+4. **Browse** results:
+   ```bash
+   tree downloaded_images
+   ```
+
+---
+
 ## 👩‍💻 Customization
 - Edit `settings.json` manually or via **4) Edit settings**.  
 - To remove a menu option, delete its block in `cli.py`.  
