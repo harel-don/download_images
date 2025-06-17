@@ -6,7 +6,12 @@ DEFAULTS = {
     "extensions": [".gif", ".png"],
     "size": [96, 96],
     "output_dir": "downloaded_images",
-    "group_by": "number"
+    "group_by": "number",
+    # Sprite-sheet → Animation defaults
+   "sheet_frame_width": None,
+   "sheet_frame_height": None,
+    "sheet_duration": 100,
+    "sheet_loop": 0,
 }
 
 

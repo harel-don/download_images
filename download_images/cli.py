@@ -34,19 +34,48 @@ def handle_group(cfg):
     print("Grouping images..."); group_images(cfg['output_dir'], cfg['group_by']); print("Grouping complete.")
 
 
-def handle_edit(cfg):
-    print("\nCurrent settings:")
-    for k, v in cfg.items(): print(f"  {k}: {v}")
-    print("\nLeave blank to keep current.")
-    e = input(f"Extensions [{','.join(cfg['extensions'])}]: ")
-    if e.strip(): cfg['extensions'] = [x.strip() for x in e.split(',')]
-    s = input(f"Size WxH [{cfg['size'][0]}x{cfg['size'][1]}]: ")
-    if s.strip(): w, h = s.lower().split('x'); cfg['size']=[int(w), int(h)]
-    o = input(f"Output dir [{cfg['output_dir']}]: ")
-    if o.strip(): cfg['output_dir']=o.strip()
-    g = input(f"Group by [{cfg['group_by']}]: ")
-    if g.strip(): cfg['group_by']=g.strip()
-    save_config(cfg); print("Settings saved!\n")
+def handle_edit(config):
+    print("Current settings:")
+    for key, val in config.items():
+        print(f"  {key}: {val}")
+    print("\nEnter new values or leave blank to keep current.")
+
+    new_ext = input(f"Extensions (comma-separated) [{','.join(config['extensions'])}]: ")
+    if new_ext.strip():
+        config['extensions'] = [e.strip() for e in new_ext.split(',')]
+
+    new_size = input(f"Size WxH [{config['size'][0]}x{config['size'][1]}]: ")
+    if new_size.strip():
+        w, h = new_size.lower().split('x')
+        config['size'] = [int(w), int(h)]
+
+    new_out = input(f"Output directory [{config['output_dir']}]: ")
+    if new_out.strip():
+        config['output_dir'] = new_out.strip()
+
+    new_group = input(f"Group by ('number') [{config['group_by']}]: ")
+    if new_group.strip():
+        config['group_by'] = new_group.strip()
+
+    # ——— Sprite-sheet settings ———
+    new_sfw = input(f"Sheet frame width (or Enter for auto) [{config.get('sheet_frame_width')}]: ")
+    if new_sfw.strip():
+        config['sheet_frame_width'] = int(new_sfw)
+
+    new_sfh = input(f"Sheet frame height (or Enter for auto) [{config.get('sheet_frame_height')}]: ")
+    if new_sfh.strip():
+        config['sheet_frame_height'] = int(new_sfh)
+
+    new_dur = input(f"Sheet animation duration ms [{config.get('sheet_duration')}]: ")
+    if new_dur.strip():
+        config['sheet_duration'] = int(new_dur)
+
+    new_loop = input(f"Sheet animation loop count [{config.get('sheet_loop')}]: ")
+    if new_loop.strip():
+        config['sheet_loop'] = int(new_loop)
+
+    save_config(config)
+    print("Settings saved.")
 
 
 def handle_resize(cfg):
@@ -60,7 +89,7 @@ def handle_sheet(cfg):
         source = cfg['output_dir']
         print(f"Using default directory: {source}")
 
-    # Build list of sheet paths (either one file or all valid images in a folder)
+    # Collect .png/.gif files from directory or accept a single file
     exts = cfg.get("extensions", [".png", ".gif"])
     if os.path.isdir(source):
         sheet_paths = []
@@ -79,17 +108,13 @@ def handle_sheet(cfg):
             return
         sheet_paths = [source]
 
-    # Prompt for optional parameters
-    fw = input("Frame width (or Enter to infer): ").strip() or None
-    fh = input("Frame height (or Enter to infer): ").strip() or None
-    dur = int(input("Frame duration in ms [100]: ").strip() or 100)
-    lp  = int(input("Loop count [0=infinite]: ").strip() or 0)
+    # Load sprite-sheet settings (None means infer from sheet)
+    fw  = cfg.get('sheet_frame_width')    # frame width
+    fh  = cfg.get('sheet_frame_height')   # frame height
+    dur = cfg.get('sheet_duration', 100)  # ms per frame
+    lp  = cfg.get('sheet_loop', 0)        # loop count
 
-    # Convert width/height inputs to ints or None
-    fw = int(fw) if fw else None
-    fh = int(fh) if fh else None
-
-    # Process each sheet
+    # Process each sheet file
     for sheet in sheet_paths:
         try:
             sheet_to_animation(

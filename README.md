@@ -2,23 +2,25 @@
 
 A simple, configurable Python command-line tool to:
 
-1. **Download** web images matching size and file-type criteria
-2. **Group** downloaded images into subfolders (by numeric ID)
-3. **Resize Canvas** of existing images to ensure a minimum square size (e.g., 96×96), preserving transparency and animation
+1. **Download** web images matching size and file-type criteria  
+2. **Group** downloaded images into subfolders (by numeric ID)  
+3. **Resize Canvas** of existing images to ensure a minimum square size (e.g., 96×96), preserving transparency and animation  
+4. **Sprite-sheet → Animation**: slice and assemble sprite sheets into looping GIFs/APNGs  
 
 ---
 
 ## 📦 Project Structure
 ```
 Download Images/              # Project root
-├── downloaded_images/        # Output folder (auto-created)
+├── downloaded_images/        # Output folder (auto‐created)
 ├── download_images/          # Python package modules
 │   ├── __init__.py
 │   ├── downloader.py         # Scrape & download logic
 │   ├── grouper.py            # Image grouping logic
-│   ├── resizer.py            # Canvas-expansion logic
+│   ├── resizer.py            # Canvas‐expansion logic
+│   ├── sheet_assembler.py    # Sprite‐sheet slicing + animation
 │   └── cli.py                # Main CLI entry point
-├── settings.json             # User settings (extensions, size, etc.)
+├── settings.json             # User settings (extensions, sizes, etc.)
 └── README.md                 # This file
 ```
 
@@ -26,12 +28,13 @@ Download Images/              # Project root
 
 ## ⚙️ Installation
 
-1. **Clone** or download this repository:
+1. **Clone** or download this repository:  
    ```bash
    git clone https://github.com/YOUR_USERNAME/download_images.git
    cd download_images
    ```
-2. **Install** dependencies (recommended in a virtualenv):
+
+2. **Install** dependencies (recommended in a virtualenv):  
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate    # macOS/Linux
@@ -41,23 +44,33 @@ Download Images/              # Project root
    pip install requests beautifulsoup4 pillow
    ```
 
-3. **Initialize** settings (auto-generated on first run):
-   - A `settings.json` file will appear with default values for:  
-     • `extensions`: [".gif", ".png"]  
-     • `size`: [96, 96]  
-     • `output_dir`: "downloaded_images"  
-     • `group_by`: "number"
+3. **Initialize** settings (auto‐generated on first run):  
+   A `settings.json` will be created with defaults:
+   ```json
+   {
+     "extensions": [".gif", ".png"],
+     "sizes": [[96, 96]],
+     "output_dir": "downloaded_images",
+     "group_by": "number",
+     "sheet_frame_width": null,
+     "sheet_frame_height": null,
+     "sheet_duration": 100,
+     "sheet_loop": 0
+   }
+   ```
 
 ---
 
 ## 🚀 Usage
 
 Run the CLI tool:
+
 ```bash
 python -m download_images.cli
 ```
 
-You will see a menu:
+You’ll see:
+
 ```
 Select operation mode:
 1) Download images
@@ -65,69 +78,67 @@ Select operation mode:
 3) Both
 4) Edit settings
 5) Resize canvas
-6) Exit
+6) Sprite-sheet → Animation
+7) Exit
 ```
 
-### 1) Download images
-- **Prompt**: Enter a webpage URL
-- **Action**: Scrapes all `<img>` elements (supports `src` and `data-src`), filters by file extension and exact size from settings, and saves raw files into `downloaded_images/`.
+### 1) Download images  
+- **Prompt**: Enter a webpage URL  
+- **Action**: Scrapes `<img>` tags (supports `src`/`data-src`), filters by extensions and any size in `settings.json ▶ sizes`, and saves raw files to `downloaded_images/`.
 
-### 2) Group images
-- **Action**: Scans `downloaded_images/`, extracts the first numeric token in each filename (e.g. `004` in `Spr 5b 004.png`), makes subfolders named by that number, and moves each file into its corresponding folder.
+### 2) Group images  
+- **Action**: Scans `downloaded_images/`, extracts the first numeric token from each filename (e.g. `004` in `Spr 5b 004.png`), creates subfolders named by that token, and moves files accordingly.
 
-### 3) Both
-- **Action**: Performs Download then Group in sequence.
+### 3) Both  
+- **Action**: Runs Download then Group in sequence.
 
-### 4) Edit settings
-- **Action**: Opens an interactive prompt to adjust:
-  - **Extensions** (comma-separated)
-  - **Size** (e.g. `96x96`)
-  - **Output directory**
-  - **Grouping mode** (currently only `number`)
-- **Persistence**: Writes to `settings.json` so your preferences are remembered on next run.
+### 4) Edit settings  
+- **Action**: Interactive prompts to adjust:
+  - **Extensions** (comma-separated, e.g. `.gif,.png,.jpg`)  
+  - **Sizes** (comma-separated WxH pairs, e.g. `96x96,128x128`)  
+  - **Output directory**  
+  - **Group by** mode (`number`)  
+  - **Sprite-sheet settings**:
+    - `sheet_frame_width`        – explicit frame width (or leave blank to infer)  
+    - `sheet_frame_height`       – explicit frame height (or leave blank to infer)  
+    - `sheet_duration`           – ms per frame (default `100`)  
+    - `sheet_loop`               – loop count (`0` = infinite)  
+- **Persistence**: Writes updates to `settings.json`.
 
-### 5) Resize canvas
-- **Action**: Walks `downloaded_images/` and for each image:
-  - Determines the larger of width or height vs. the minimum size
-  - Creates a new transparent canvas of that square size
-  - Pastes each frame (if animated) or the static image centered horizontally and aligned bottom
-  - Saves back to the original file path, preserving GIF/APNG animation and transparency
+### 5) Resize canvas  
+- **Action**: For each image in `downloaded_images/`:
+  - Computes the larger dimension vs. each size in `sizes` and pads to that square.  
+  - Creates a transparent canvas, centers the original horizontally, aligns bottom.  
+  - Preserves GIF/APNG animation & transparency.
 
-### 6) Exit
-- **Action**: Quit the tool.
+### 6) Sprite-sheet → Animation  
+- **Action**: Takes one or more sprite-sheet files (PNG/GIF) and assembles them into looping animations.  
+- **Input**: Enter a file path, press **Enter** to default to `output_dir/`.  
+- **Settings**:
+  - `sheet_frame_width`  – if set, forces frame width; else infers from sheet height  
+  - `sheet_frame_height` – if set, forces frame height; else infers from sheet height  
+  - `sheet_duration`     – ms per frame  
+  - `sheet_loop`         – loop count  
+- **Example**:
+  ```bash
+  python -m download_images.cli
+  # Choose 6) Sprite-sheet → Animation
+  # Press Enter to use downloaded_images/
+  ```
 
----
-
-## 🎨 Example Workflow
-
-1. **Download and group sprites** from Bulbapedia:
-   ```bash
-   python -m download_images.cli
-   # Choose 3) Both
-   # Paste: https://archives.bulbagarden.net/wiki/Category:Black_2_and_White_2_sprites
-   ```
-
-2. **Resize** any small images to ensure 96×96 canvas:
-   ```bash
-   python -m download_images.cli
-   # Choose 5) Resize canvas
-   ```
-
-3. **View** organized files in `downloaded_images/`:
-   ```bash
-   tree downloaded_images
-   ```
+### 7) Exit  
+- **Action**: Quit the application.
 
 ---
 
 ## 👩‍💻 Customization
-- You can modify defaults in `settings.json`, or use the **4) Edit settings** menu.
-- To remove the temporary **Resize canvas** option, simply delete its block in `cli.py` (option 5).
-- To add more grouping strategies (e.g. `prefix`), extend `group_images()` in `grouper.py`.
+- Edit `settings.json` manually or via **4) Edit settings**.  
+- To remove a menu option, delete its block in `cli.py`.  
+- To add new grouping modes, extend `group_images()` in `grouper.py`.  
 
 ---
 
 ## 📄 License
 MIT © Harel Don-Yehiya
 
-Feel free to fork and contribute!
+Feel free to fork, modify, and contribute!
